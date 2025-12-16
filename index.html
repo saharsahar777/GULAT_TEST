@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -104,6 +104,7 @@
         .walk-main-btn.loading {
             background: #999;
             pointer-events: none;
+            opacity: 0.6;
         }
 
         .walk-icon {
@@ -141,6 +142,7 @@
         .location-main-btn.loading {
             background: #999;
             pointer-events: none;
+            opacity: 0.6;
         }
 
         /* Кнопка "Я на месте" */
@@ -400,7 +402,7 @@
 
             const btn = document.getElementById('locationBtn');
             btn.classList.add('loading');
-            btn.textContent = '⏳';
+            // Не меняем содержимое кнопки, оставляем SVG иконку
 
             const options = {
                 enableHighAccuracy: true,
@@ -446,14 +448,12 @@
                     userLocation = {lat: lat, lon: lon};
                     
                     btn.classList.remove('loading');
-                    btn.textContent = '📍';
                     
                     if (!silent) showToast('Местоположение определено');
                 },
                 (error) => {
                     console.error('Ошибка геолокации:', error);
                     btn.classList.remove('loading');
-                    btn.textContent = '📍';
                     
                     if (!silent) {
                         let errorMessage = '';
@@ -490,7 +490,7 @@
 
             const walkBtn = document.getElementById('walkBtn');
             walkBtn.classList.add('loading');
-            walkBtn.textContent = '⏳';
+            // Не меняем содержимое кнопки, оставляем SVG иконку
 
             // Удаляем предыдущий маршрут
             if (walkDestinationMarker) {
@@ -566,7 +566,6 @@
             map.fitBounds(bounds, { padding: [50, 50] });
 
             walkBtn.classList.remove('loading');
-            walkBtn.textContent = '🚶';
 
             showToast(`Цель: ${Math.round(actualDistance)}м от вас!`);
             

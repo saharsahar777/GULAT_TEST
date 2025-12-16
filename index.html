@@ -29,96 +29,135 @@
             background: #f5f5f5;
         }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 1001;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        #map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            touch-action: pan-x pan-y;
         }
 
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            background: #e5e5e5;
         }
 
-        .location-btn {
+        /* Кнопки зума слева сверху */
+        .zoom-controls {
             position: absolute;
-            bottom: 24px;
-            right: 16px;
+            top: 20px;
+            left: 20px;
             z-index: 1000;
-            background: #667eea;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            background: #8B7AB8;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 56px;
-            height: 56px;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(139, 122, 184, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-weight: 300;
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+            background: #7B6AA8;
+        }
+
+        /* Большая кнопка "Гулять" внизу по центру */
+        .walk-main-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 70px;
+            height: 70px;
+            background: #8B7AB8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(139, 122, 184, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
         }
 
-        .location-btn:active {
-            transform: scale(0.95);
-            background: #5568d3;
+        .walk-main-btn:active {
+            transform: translateX(-50%) scale(0.95);
+            background: #7B6AA8;
         }
 
-        .location-btn.loading {
+        .walk-main-btn.loading {
             background: #999;
             pointer-events: none;
         }
 
-        .walk-btn {
+        .walk-icon {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+
+        /* Кнопка геолокации справа внизу */
+        .location-main-btn {
             position: absolute;
-            bottom: 24px;
-            right: 88px;
+            bottom: 30px;
+            right: 20px;
             z-index: 1000;
-            background: #48bb78;
+            width: 50px;
+            height: 50px;
+            background: #8B7AB8;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 56px;
-            height: 56px;
             font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(139, 122, 184, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
         }
 
-        .walk-btn:active {
+        .location-main-btn:active {
             transform: scale(0.95);
-            background: #38a169;
+            background: #7B6AA8;
         }
 
-        .walk-btn.loading {
+        .location-main-btn.loading {
             background: #999;
             pointer-events: none;
         }
 
+        /* Кнопка "Я на месте" */
         .arrived-btn {
             position: fixed;
-            bottom: 24px;
-            left: 16px;
+            bottom: 30px;
+            left: 20px;
             z-index: 1000;
             background: #90EE90;
             color: #2d5016;
             border: none;
-            border-radius: 12px;
-            padding: 16px 24px;
-            font-size: 16px;
+            border-radius: 25px;
+            padding: 14px 20px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(144, 238, 144, 0.4);
             display: none;
             align-items: center;
             justify-content: center;
@@ -132,6 +171,28 @@
         .arrived-btn:active {
             transform: scale(0.95);
             background: #7CD67C;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            z-index: 10000;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
         }
 
         /* Модальное окно */
@@ -177,7 +238,7 @@
         .modal-content h2 {
             font-size: 20px;
             margin-bottom: 12px;
-            color: #2d5016;
+            color: #8B7AB8;
             text-align: center;
         }
 
@@ -192,7 +253,7 @@
         .modal-btn {
             width: 100%;
             padding: 14px;
-            background: #48bb78;
+            background: #8B7AB8;
             color: white;
             border: none;
             border-radius: 10px;
@@ -204,69 +265,20 @@
 
         .modal-btn:active {
             transform: scale(0.98);
-            background: #38a169;
+            background: #7B6AA8;
         }
 
         .error-text {
             color: #ff4444;
         }
 
-        #map {
-            flex: 1;
-            width: 100%;
-            height: 100%;
-            position: relative;
-            touch-action: pan-x pan-y;
-        }
-
-        .leaflet-container {
-            height: 100%;
-            width: 100%;
-            background: #e5e5e5;
-        }
-
-        .leaflet-control-attribution {
-            font-size: 10px;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 24px;
-            z-index: 10000;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            max-width: 80%;
-            text-align: center;
-        }
-
-        .toast.show {
-            opacity: 1;
-        }
-
-        /* Улучшенные стили для мобильных устройств */
-        .leaflet-touch .leaflet-control-layers,
-        .leaflet-touch .leaflet-bar {
-            border: 2px solid rgba(0,0,0,0.2);
-            background-clip: padding-box;
-        }
-
-        .leaflet-touch .leaflet-control-layers,
-        .leaflet-touch .leaflet-bar a {
-            width: 44px;
-            height: 44px;
-            line-height: 44px;
+        /* Скрываем стандартные кнопки Leaflet */
+        .leaflet-control-zoom {
+            display: none;
         }
 
         .leaflet-popup-content-wrapper {
-            border-radius: 8px;
+            border-radius: 12px;
         }
 
         .leaflet-popup-content {
@@ -276,20 +288,27 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🗺️ Карта</h1>
+    <!-- Кнопки зума -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
     </div>
 
     <div id="map"></div>
 
-    <button class="walk-btn" id="walkBtn" onclick="startWalk()">
-        🚶
+    <!-- Большая кнопка "Гулять" -->
+    <button class="walk-main-btn" id="walkBtn" onclick="startWalk()">
+        <svg class="walk-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 19.5h20L12 2z" fill="white"/>
+        </svg>
     </button>
 
-    <button class="location-btn" id="locationBtn" onclick="getMyLocation()">
+    <!-- Кнопка геолокации -->
+    <button class="location-main-btn" id="locationBtn" onclick="getMyLocation()">
         📍
     </button>
 
+    <!-- Кнопка "Я на месте" -->
     <button class="arrived-btn" id="arrivedBtn" onclick="checkArrival()">
         ✅ Я на месте
     </button>
@@ -330,7 +349,7 @@
             try {
                 // Инициализация карты (центр - Варшава)
                 map = L.map('map', {
-                    zoomControl: true,
+                    zoomControl: false, // Убираем стандартные кнопки зума
                     attributionControl: false, // Убираем атрибуцию
                     tap: true,
                     touchZoom: true,
@@ -348,13 +367,6 @@
                 initialMarker.bindPopup('<b>Варшава</b><br>Столица Польши');
                 markers.push(initialMarker);
 
-                // Добавление масштабирования
-                L.control.scale({
-                    imperial: false,
-                    metric: true,
-                    position: 'bottomleft'
-                }).addTo(map);
-
                 console.log('✅ Карта успешно инициализирована');
                 
                 // Попытка автоматически определить местоположение при запуске
@@ -367,6 +379,15 @@
                 showToast('Ошибка загрузки карты');
             }
         });
+
+        // Функции зума
+        function zoomIn() {
+            map.zoomIn();
+        }
+
+        function zoomOut() {
+            map.zoomOut();
+        }
 
         // Функция получения текущего местоположения
         function getMyLocation(silent = false) {

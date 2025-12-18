@@ -351,21 +351,14 @@
             font-size: 14px;
         }
 
-        /* Анимация для маркера назначения */
-        @keyframes markerPulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
+        /* Исправление отображения кастомного маркера */
         .custom-destination-icon {
-            animation: markerPulse 2s ease-in-out infinite;
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        .custom-destination-icon div {
+            position: relative;
         }
     </style>
 </head>
@@ -573,7 +566,7 @@
             walkBtn.classList.add('loading');
             // Не меняем содержимое кнопки, оставляем SVG иконку
 
-            // Удаляем предыдущий маршрут только если создаем новый
+            // Удаляем предыдущий маршрут
             if (walkDestinationMarker) {
                 map.removeLayer(walkDestinationMarker);
                 walkDestinationMarker = null;
@@ -582,6 +575,14 @@
                 map.removeLayer(walkRouteLine);
                 walkRouteLine = null;
             }
+            
+            // Дополнительная очистка: удаляем все старые маркеры из DOM на всякий случай
+            const oldMarkers = document.querySelectorAll('.custom-destination-icon');
+            oldMarkers.forEach(marker => {
+                if (marker.parentElement) {
+                    marker.parentElement.remove();
+                }
+            });
 
             // Генерируем случайную точку в радиусе 500-2000 метров
             const minDistance = 500; // минимум 500 метров
@@ -595,6 +596,9 @@
 
             const destinationLat = userLocation.lat + deltaLat;
             const destinationLon = userLocation.lon + deltaLon;
+
+            console.log('Пользователь:', userLocation.lat, userLocation.lon);
+            console.log('Точка назначения:', destinationLat, destinationLon);
 
             // Сохраняем координаты назначения для кнопки маршрута
             window.walkDestination = {
@@ -611,6 +615,9 @@
                     iconAnchor: [15, 15]
                 })
             }).addTo(map);
+            
+            console.log('Маркер создан:', walkDestinationMarker);
+            console.log('Маркер на карте:', map.hasLayer(walkDestinationMarker));
 
             // Вычисляем реальное расстояние
             const actualDistance = calculateDistance(
@@ -618,7 +625,7 @@
                 destinationLat, destinationLon
             );
 
-            // Добавляем кнопки выбора карт в popup
+            // Добавляем кнопки выбора карт в popup (popup нельзя закрыть)
             walkDestinationMarker.bindPopup(
                 `<b>🎯 Точка назначения</b><br>` +
                 `Расстояние: ~${Math.round(actualDistance)}м<br>` +
@@ -627,14 +634,22 @@
                 `<button onclick="openRoute('yandex')" style="padding: 8px 12px; background: #FC3F1D; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ Яндекс.Карты</button>` +
                 `<button onclick="openRoute('2gis')" style="padding: 8px 12px; background: #31AC45; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ 2GIS</button>` +
                 `<button onclick="openRoute('google')" style="padding: 8px 12px; background: #4285F4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ Google Maps</button>` +
-                `</div>`
+                `</div>`,
+                {
+                    closeButton: false, // Убираем кнопку закрытия
+                    closeOnClick: false, // Не закрывается при клике на карту
+                    autoClose: false // Не закрывается автоматически
+                }
             ).openPopup();
 
             // Рисуем линию маршрута
-            walkRouteLine = L.polyline([
+            const lineCoords = [
                 [userLocation.lat, userLocation.lon],
                 [destinationLat, destinationLon]
-            ], {
+            ];
+            console.log('Координаты линии:', lineCoords);
+            
+            walkRouteLine = L.polyline(lineCoords, {
                 color: '#ff4444',
                 weight: 4,
                 opacity: 0.8,

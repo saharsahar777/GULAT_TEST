@@ -573,12 +573,14 @@
             walkBtn.classList.add('loading');
             // Не меняем содержимое кнопки, оставляем SVG иконку
 
-            // Удаляем предыдущий маршрут
+            // Удаляем предыдущий маршрут только если создаем новый
             if (walkDestinationMarker) {
                 map.removeLayer(walkDestinationMarker);
+                walkDestinationMarker = null;
             }
             if (walkRouteLine) {
                 map.removeLayer(walkRouteLine);
+                walkRouteLine = null;
             }
 
             // Генерируем случайную точку в радиусе 500-2000 метров
@@ -650,12 +652,14 @@
 
             showToast(`Цель: ${Math.round(actualDistance)}м от вас!`);
             
-            // Плавное перемещение кнопок без размытия
-            // Перемещаем кнопку "Гулять" вправо и уменьшаем
-            walkBtn.classList.add('moved');
-            
-            // Показываем кнопку "Я на месте"
-            document.getElementById('arrivedBtn').classList.add('show');
+            // Плавное перемещение кнопок без размытия (только при первом нажатии)
+            if (!walkBtn.classList.contains('moved')) {
+                // Перемещаем кнопку "Гулять" вправо и уменьшаем
+                walkBtn.classList.add('moved');
+                
+                // Показываем кнопку "Я на месте"
+                document.getElementById('arrivedBtn').classList.add('show');
+            }
         }
 
         // Функция проверки прибытия на место

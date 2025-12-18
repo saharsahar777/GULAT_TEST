@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -34,6 +34,11 @@
             height: 100%;
             position: relative;
             touch-action: pan-x pan-y;
+            transition: filter 0.5s ease;
+        }
+
+        #map.blurred {
+            filter: blur(8px);
         }
 
         .leaflet-container {
@@ -93,11 +98,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s;
+            transition: all 0.5s ease;
+        }
+
+        /* Состояние после нажатия - кнопка уменьшается и перемещается вправо */
+        .walk-main-btn.moved {
+            width: 50px;
+            height: 50px;
+            right: 88px;
+            left: auto;
+            transform: translateX(0);
         }
 
         .walk-main-btn:active {
             transform: translateX(-50%) scale(0.95);
+            background: #7B6AA8;
+        }
+
+        .walk-main-btn.moved:active {
+            transform: scale(0.95);
             background: #7B6AA8;
         }
 
@@ -111,6 +130,12 @@
             width: 30px;
             height: 30px;
             fill: white;
+            transition: all 0.5s ease;
+        }
+
+        .walk-main-btn.moved .walk-icon {
+            width: 24px;
+            height: 24px;
         }
 
         /* Кнопка геолокации справа внизу */
@@ -154,20 +179,63 @@
             background: #90EE90;
             color: #2d5016;
             border: none;
-            border-radius: 25px;
+            border-radius: 12px;
             padding: 14px 20px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(144, 238, 144, 0.4);
-            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
+            gap: 8px;
+            transition: all 0.5s ease;
         }
 
         .arrived-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .arrived-btn:active {
+            transform: scale(0.95);
+            background: #7CD67C;
+        }
+
+        .arrived-btn.show:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        /* Иконка галочки в кнопке */
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
         }
 
         .arrived-btn:active {
@@ -287,6 +355,23 @@
             margin: 12px;
             font-size: 14px;
         }
+
+        /* Анимация для маркера назначения */
+        @keyframes markerPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .custom-destination-icon {
+            animation: markerPulse 2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -314,7 +399,8 @@
 
     <!-- Кнопка "Я на месте" -->
     <button class="arrived-btn" id="arrivedBtn" onclick="checkArrival()">
-        ✅ Я на месте
+        <span class="check-icon">✓</span>
+        Я на месте
     </button>
 
     <div class="toast" id="toast"></div>
@@ -569,8 +655,22 @@
 
             showToast(`Цель: ${Math.round(actualDistance)}м от вас!`);
             
-            // Показываем кнопку "Я на месте"
-            document.getElementById('arrivedBtn').classList.add('show');
+            // Анимация размытия и перестановки кнопок
+            const mapElement = document.getElementById('map');
+            mapElement.classList.add('blurred');
+            
+            setTimeout(() => {
+                // Перемещаем кнопку "Гулять" вправо и уменьшаем
+                walkBtn.classList.add('moved');
+                
+                // Показываем кнопку "Я на месте"
+                document.getElementById('arrivedBtn').classList.add('show');
+                
+                // Убираем размытие
+                setTimeout(() => {
+                    mapElement.classList.remove('blurred');
+                }, 500);
+            }, 1000);
         }
 
         // Функция проверки прибытия на место
@@ -670,6 +770,8 @@
             closeModal();
             // Скрываем кнопку "Я на месте"
             document.getElementById('arrivedBtn').classList.remove('show');
+            // Возвращаем кнопку "Гулять" в центр
+            document.getElementById('walkBtn').classList.remove('moved');
             // Запускаем новую прогулку
             startWalk();
         }

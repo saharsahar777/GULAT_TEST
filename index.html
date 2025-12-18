@@ -34,11 +34,6 @@
             height: 100%;
             position: relative;
             touch-action: pan-x pan-y;
-            transition: filter 0.5s ease;
-        }
-
-        #map.blurred {
-            filter: blur(8px);
         }
 
         .leaflet-container {
@@ -655,22 +650,12 @@
 
             showToast(`Цель: ${Math.round(actualDistance)}м от вас!`);
             
-            // Анимация размытия и перестановки кнопок
-            const mapElement = document.getElementById('map');
-            mapElement.classList.add('blurred');
+            // Плавное перемещение кнопок без размытия
+            // Перемещаем кнопку "Гулять" вправо и уменьшаем
+            walkBtn.classList.add('moved');
             
-            setTimeout(() => {
-                // Перемещаем кнопку "Гулять" вправо и уменьшаем
-                walkBtn.classList.add('moved');
-                
-                // Показываем кнопку "Я на месте"
-                document.getElementById('arrivedBtn').classList.add('show');
-                
-                // Убираем размытие
-                setTimeout(() => {
-                    mapElement.classList.remove('blurred');
-                }, 500);
-            }, 1000);
+            // Показываем кнопку "Я на месте"
+            document.getElementById('arrivedBtn').classList.add('show');
         }
 
         // Функция проверки прибытия на место

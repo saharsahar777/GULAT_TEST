@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Карта</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            position: fixed;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            touch-action: pan-x pan-y;
+        }
+
+        .leaflet-container {
+            height: 100%;
+            width: 100%;
+            background: #e5e5e5;
+        }
+
+        /* Кнопки зума слева сверху */
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            background: #8B7AB8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 122, 184, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-weight: 300;
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+            background: #7B6AA8;
+        }
+
+        /* Большая кнопка "Гулять" внизу по центру */
+        .walk-main-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 70px;
+            height: 70px;
+            background: #8B7AB8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(139, 122, 184, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s ease;
+        }
+
+        /* Состояние после нажатия - кнопка уменьшается и перемещается вправо */
+        .walk-main-btn.moved {
+            width: 50px;
+            height: 50px;
+            right: 88px;
+            left: auto;
+            transform: translateX(0);
+        }
+
+        .walk-main-btn:active {
+            transform: translateX(-50%) scale(0.95);
+            background: #7B6AA8;
+        }
+
+        .walk-main-btn.moved:active {
+            transform: scale(0.95);
+            background: #7B6AA8;
+        }
+
+        .walk-main-btn.loading {
+            background: #999;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .walk-icon {
+            width: 30px;
+            height: 30px;
+            fill: white;
+            transition: all 0.5s ease;
+        }
+
+        .walk-main-btn.moved .walk-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Кнопка геолокации справа внизу */
+        .location-main-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            background: #8B7AB8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 122, 184, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .location-main-btn:active {
+            transform: scale(0.95);
+            background: #7B6AA8;
+        }
+
+        .location-main-btn.loading {
+            background: #999;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Кнопка "Я на месте" */
+        .arrived-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            z-index: 1000;
+            background: #90EE90;
+            color: #2d5016;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(144, 238, 144, 0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.5s ease;
+        }
+
+        .arrived-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .arrived-btn:active {
+            transform: scale(0.95);
+            background: #7CD67C;
+        }
+
+        .arrived-btn.show:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        /* Иконка галочки в кнопке */
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        .arrived-btn:active {
+            transform: scale(0.95);
+            background: #7CD67C;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            z-index: 10000;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Модальное окно */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 10001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 320px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: #8B7AB8;
+            text-align: center;
+        }
+
+        .modal-content p {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 14px;
+            background: #8B7AB8;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:active {
+            transform: scale(0.98);
+            background: #7B6AA8;
+        }
+
+        .error-text {
+            color: #ff4444;
+        }
+
+        /* Скрываем стандартные кнопки Leaflet */
+        .leaflet-control-zoom {
+            display: none;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+        }
+
+        .leaflet-popup-content {
+            margin: 12px;
+            font-size: 14px;
+        }
+
+        /* Исправление отображения кастомного маркера */
+        .custom-destination-icon {
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        .custom-destination-icon div {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <!-- Кнопки зума -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Большая кнопка "Гулять" -->
+    <button class="walk-main-btn" id="walkBtn" onclick="startWalk()">
+        <svg class="walk-icon" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M39.7467 32.3583L26.9133 6.69166C26.4553 5.78123 25.7534 5.01596 24.8858 4.48123C24.0182 3.94649 23.0191 3.66333 22 3.66333C20.9809 3.66333 19.9818 3.94649 19.1142 4.48123C18.2466 5.01596 17.5447 5.78123 17.0867 6.69166L4.25333 32.3583C3.74918 33.3713 3.5697 34.515 3.73936 35.6337C3.90902 36.7524 4.41956 37.7915 5.20138 38.6094C5.98319 39.4273 6.99824 39.9842 8.10811 40.2041C9.21799 40.424 10.3687 40.2963 11.4033 39.8383L21.2483 35.4383C21.4864 35.3385 21.7419 35.2871 22 35.2871C22.2581 35.2871 22.5136 35.3385 22.7517 35.4383L32.5967 39.8383C33.6313 40.2963 34.782 40.424 35.8919 40.2041C37.0018 39.9842 38.0168 39.4273 38.7986 38.6094C39.5804 37.7915 40.091 36.7524 40.2606 35.6337C40.4303 34.515 40.2508 33.3713 39.7467 32.3583V32.3583ZM36.08 36.025C35.8183 36.2975 35.4788 36.4825 35.108 36.5547C34.7372 36.6269 34.3531 36.5827 34.0083 36.4283L24.1633 32.0467C23.4593 31.7333 22.6973 31.5713 21.9267 31.5713C21.156 31.5713 20.394 31.7333 19.69 32.0467L9.91833 36.4833C9.57543 36.6323 9.19517 36.6729 8.82854 36.5997C8.46191 36.5264 8.12643 36.3429 7.8671 36.0736C7.60777 35.8042 7.43697 35.4621 7.37761 35.0929C7.31825 34.7238 7.37317 34.3454 7.535 34.0083L20.3683 8.34166C20.5222 8.04136 20.7559 7.78934 21.0438 7.61335C21.3317 7.43737 21.6626 7.34425 22 7.34425C22.3374 7.34425 22.6683 7.43737 22.9562 7.61335C23.2441 7.78934 23.4778 8.04136 23.6317 8.34166L36.465 34.0083C36.6309 34.3441 36.6899 34.7227 36.6342 35.0931C36.5785 35.4634 36.4107 35.8079 36.1533 36.08L36.08 36.025Z" fill="white"/>
+        </svg>
+    </button>
+
+    <!-- Кнопка геолокации -->
+    <button class="location-main-btn" id="locationBtn" onclick="getMyLocation()">
+        <svg style="width: 26px; height: 26px;" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19.32 14.48C19.7665 13.8653 20.0344 13.1391 20.094 12.3816C20.1535 11.6242 20.0025 10.865 19.6575 10.188C19.3126 9.51105 18.7871 8.94266 18.1393 8.54568C17.4914 8.14871 16.7465 7.9386 15.9867 7.9386C15.2269 7.9386 14.4819 8.14871 13.834 8.54568C13.1862 8.94266 12.6607 9.51105 12.3158 10.188C11.9708 10.865 11.8198 11.6242 11.8793 12.3816C11.9389 13.1391 12.2068 13.8653 12.6533 14.48C12.0869 14.841 11.5826 15.2913 11.16 15.8134C11.0497 15.9561 10.9686 16.1191 10.9213 16.2931C10.874 16.4672 10.8614 16.6489 10.8843 16.8278C10.9072 17.0067 10.9651 17.1793 11.0548 17.3359C11.1444 17.4924 11.264 17.6297 11.4067 17.74C11.5494 17.8503 11.7124 17.9315 11.8865 17.9788C12.0605 18.0261 12.2422 18.0386 12.4211 18.0157C12.6 17.9928 12.7726 17.9349 12.9292 17.8453C13.0857 17.7556 13.223 17.6361 13.3333 17.4934C13.659 17.0795 14.074 16.7445 14.5473 16.5136C15.0206 16.2827 15.54 16.1619 16.0667 16.16V16.16C16.5933 16.1619 17.1127 16.2827 17.586 16.5136C18.0594 16.7445 18.4744 17.0795 18.8 17.4934C18.9255 17.6481 19.084 17.7727 19.264 17.858C19.444 17.9434 19.6408 17.9874 19.84 17.9867C20.0899 17.9855 20.3345 17.9142 20.5459 17.7807C20.7572 17.6472 20.9268 17.457 21.0352 17.2318C21.1436 17.0066 21.1866 16.7554 21.1591 16.507C21.1317 16.2585 21.035 16.0228 20.88 15.8267C20.4384 15.2943 19.9112 14.8391 19.32 14.48V14.48ZM16 13.5067C15.7149 13.5065 15.4361 13.4224 15.1984 13.265C14.9607 13.1075 14.7745 12.8836 14.6631 12.6211C14.5517 12.3587 14.52 12.0692 14.5719 11.7889C14.6238 11.5085 14.757 11.2496 14.955 11.0444C15.1529 10.8392 15.4069 10.6967 15.6852 10.6348C15.9635 10.5728 16.2539 10.5941 16.5202 10.6959C16.7865 10.7978 17.017 10.9758 17.1829 11.2076C17.3488 11.4395 17.4429 11.7151 17.4533 12C17.4605 12.1953 17.4282 12.3901 17.3584 12.5726C17.2886 12.7551 17.1827 12.9217 17.047 13.0623C16.9113 13.203 16.7487 13.3148 16.5688 13.3912C16.3889 13.4675 16.1954 13.5068 16 13.5067V13.5067ZM27.28 12.84C27.0928 10.8919 26.4043 9.02547 25.2816 7.42245C24.1588 5.81943 22.6401 4.53447 20.8733 3.69268C19.1065 2.8509 17.1518 2.48099 15.1996 2.61896C13.2474 2.75694 11.3642 3.39811 9.73333 4.48003C8.33226 5.41689 7.15607 6.65242 6.28925 8.09788C5.42244 9.54334 4.88652 11.1628 4.71999 12.84C4.55664 14.5062 4.76623 16.1879 5.33355 17.7631C5.90088 19.3382 6.81172 20.7673 7.99999 21.9467L15.0667 29.0267C15.1906 29.1517 15.3381 29.2509 15.5006 29.3185C15.663 29.3862 15.8373 29.4211 16.0133 29.4211C16.1893 29.4211 16.3636 29.3862 16.5261 29.3185C16.6886 29.2509 16.836 29.1517 16.96 29.0267L24 21.9467C25.1883 20.7673 26.0991 19.3382 26.6664 17.7631C27.2338 16.1879 27.4433 14.5062 27.28 12.84V12.84ZM22.1333 20.0667L16 26.2L9.86666 20.0667C8.96278 19.1628 8.2704 18.0698 7.83928 16.8664C7.40817 15.6629 7.24904 14.379 7.37333 13.1067C7.49842 11.8148 7.90901 10.5669 8.57542 9.45315C9.24183 8.33939 10.1474 7.38763 11.2267 6.66669C12.6413 5.72701 14.3017 5.22575 16 5.22575C17.6983 5.22575 19.3587 5.72701 20.7733 6.66669C21.8493 7.38485 22.7529 8.3324 23.4191 9.44128C24.0854 10.5502 24.4978 11.7928 24.6267 13.08C24.755 14.3566 24.5979 15.6457 24.1666 16.8541C23.7354 18.0625 23.0409 19.1598 22.1333 20.0667V20.0667Z" fill="white"/>
+        </svg>
+    </button>
+
+    <!-- Кнопка "Я на месте" -->
+    <button class="arrived-btn" id="arrivedBtn" onclick="checkArrival()">
+        <span class="check-icon">✓</span>
+        Я на месте
+    </button>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Модальное окно -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">🎉 Поздравляем!</h2>
+            <p id="modalText">Вы добрались до конечной точки маршрута.</p>
+            <button class="modal-btn" id="modalBtn" onclick="closeModalAndWalk()">🚶 Гулять ещё</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        let map;
+        let markers = [];
+        let currentLocationMarker = null;
+        let walkDestinationMarker = null;
+        let walkRouteLine = null;
+        let userLocation = null;
+
+        // Показать уведомление
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Инициализация карты после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Инициализация карты (центр - Варшава)
+                map = L.map('map', {
+                    zoomControl: false, // Убираем стандартные кнопки зума
+                    attributionControl: false, // Убираем атрибуцию
+                    tap: true,
+                    touchZoom: true,
+                    dragging: true
+                }).setView([52.2297, 21.0122], 13);
+
+                // Добавление слоя 2GIS
+                L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}&v=1', {
+                    maxZoom: 19,
+                    minZoom: 3
+                }).addTo(map);
+
+                // Добавление начальной метки
+                const initialMarker = L.marker([52.2297, 21.0122]).addTo(map);
+                initialMarker.bindPopup('<b>Варшава</b><br>Столица Польши');
+                markers.push(initialMarker);
+
+                console.log('✅ Карта успешно инициализирована');
+                
+                // Попытка автоматически определить местоположение при запуске
+                setTimeout(() => {
+                    getMyLocation(true);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Ошибка инициализации карты:', error);
+                showToast('Ошибка загрузки карты');
+            }
+        });
+
+        // Функции зума
+        function zoomIn() {
+            map.zoomIn();
+        }
+
+        function zoomOut() {
+            map.zoomOut();
+        }
+
+        // Функция получения текущего местоположения
+        function getMyLocation(silent = false) {
+            if (!navigator.geolocation) {
+                if (!silent) showToast('Геолокация не поддерживается');
+                return;
+            }
+
+            const btn = document.getElementById('locationBtn');
+            btn.classList.add('loading');
+            // Не меняем содержимое кнопки, оставляем SVG иконку
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    map.setView([lat, lon], 15);
+                    
+                    // Удаляем предыдущий маркер текущего местоположения
+                    if (currentLocationMarker) {
+                        map.removeLayer(currentLocationMarker);
+                    }
+                    
+                    // Создаем специальный маркер для текущего местоположения
+                    currentLocationMarker = L.circleMarker([lat, lon], {
+                        radius: 10,
+                        fillColor: '#4285F4',
+                        color: '#ffffff',
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                    
+                    // Добавляем круг точности
+                    L.circle([lat, lon], {
+                        radius: accuracy,
+                        fillColor: '#4285F4',
+                        fillOpacity: 0.1,
+                        color: '#4285F4',
+                        weight: 1
+                    }).addTo(map);
+                    
+                    currentLocationMarker.bindPopup(`<b>Вы здесь!</b><br>Точность: ${Math.round(accuracy)}м`).openPopup();
+                    
+                    // Сохраняем текущее местоположение
+                    userLocation = {lat: lat, lon: lon};
+                    
+                    btn.classList.remove('loading');
+                    
+                    if (!silent) showToast('Местоположение определено');
+                },
+                (error) => {
+                    console.error('Ошибка геолокации:', error);
+                    btn.classList.remove('loading');
+                    
+                    if (!silent) {
+                        let errorMessage = '';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Доступ к геолокации запрещен. Разрешите доступ в настройках.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Местоположение недоступно. Проверьте GPS.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Превышено время ожидания.';
+                                break;
+                            default:
+                                errorMessage = 'Ошибка получения местоположения.';
+                        }
+                        
+                        showToast(errorMessage, 4000);
+                    }
+                },
+                options
+            );
+        }
+
+        // Функция "Гулять" - генерирует случайную точку
+        function startWalk() {
+            if (!userLocation) {
+                showToast('Сначала определите своё местоположение');
+                // Пытаемся определить местоположение
+                getMyLocation();
+                return;
+            }
+
+            const walkBtn = document.getElementById('walkBtn');
+            walkBtn.classList.add('loading');
+            // Не меняем содержимое кнопки, оставляем SVG иконку
+
+            // Удаляем предыдущий маршрут
+            if (walkDestinationMarker) {
+                map.removeLayer(walkDestinationMarker);
+                walkDestinationMarker = null;
+            }
+            if (walkRouteLine) {
+                map.removeLayer(walkRouteLine);
+                walkRouteLine = null;
+            }
+            
+            // Дополнительная очистка: удаляем все старые маркеры из DOM на всякий случай
+            const oldMarkers = document.querySelectorAll('.custom-destination-icon');
+            oldMarkers.forEach(marker => {
+                if (marker.parentElement) {
+                    marker.parentElement.remove();
+                }
+            });
+
+            // Генерируем случайную точку в радиусе 500-2000 метров
+            const minDistance = 500; // минимум 500 метров
+            const maxDistance = 2000; // максимум 2 км
+            const distance = minDistance + Math.random() * (maxDistance - minDistance);
+            const angle = Math.random() * 2 * Math.PI;
+
+            // Вычисляем новые координаты (примерно 111км = 1 градус)
+            const deltaLat = (distance / 111000) * Math.cos(angle);
+            const deltaLon = (distance / (111000 * Math.cos(userLocation.lat * Math.PI / 180))) * Math.sin(angle);
+
+            const destinationLat = userLocation.lat + deltaLat;
+            const destinationLon = userLocation.lon + deltaLon;
+
+            console.log('Пользователь:', userLocation.lat, userLocation.lon);
+            console.log('Точка назначения:', destinationLat, destinationLon);
+
+            // Сохраняем координаты назначения для кнопки маршрута
+            window.walkDestination = {
+                lat: destinationLat,
+                lon: destinationLon
+            };
+
+            // Создаём маркер назначения
+            walkDestinationMarker = L.marker([destinationLat, destinationLon], {
+                icon: L.divIcon({
+                    className: 'custom-destination-icon',
+                    html: '<div style="background: #ff4444; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px;">🎯</div>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+            
+            console.log('Маркер создан:', walkDestinationMarker);
+            console.log('Маркер на карте:', map.hasLayer(walkDestinationMarker));
+
+            // Вычисляем реальное расстояние
+            const actualDistance = calculateDistance(
+                userLocation.lat, userLocation.lon,
+                destinationLat, destinationLon
+            );
+
+            // Добавляем кнопки выбора карт в popup (popup нельзя закрыть)
+            walkDestinationMarker.bindPopup(
+                `<b>🎯 Точка назначения</b><br>` +
+                `Расстояние: ~${Math.round(actualDistance)}м<br>` +
+                `Время: ~${Math.round(actualDistance / 80)} мин<br>` +
+                `<div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">` +
+                `<button onclick="openRoute('yandex')" style="padding: 8px 12px; background: #FC3F1D; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ Яндекс.Карты</button>` +
+                `<button onclick="openRoute('2gis')" style="padding: 8px 12px; background: #31AC45; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ 2GIS</button>` +
+                `<button onclick="openRoute('google')" style="padding: 8px 12px; background: #4285F4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🗺️ Google Maps</button>` +
+                `</div>`,
+                {
+                    closeButton: false, // Убираем кнопку закрытия
+                    closeOnClick: false, // Не закрывается при клике на карту
+                    autoClose: false // Не закрывается автоматически
+                }
+            ).openPopup();
+
+            // Рисуем линию маршрута
+            const lineCoords = [
+                [userLocation.lat, userLocation.lon],
+                [destinationLat, destinationLon]
+            ];
+            console.log('Координаты линии:', lineCoords);
+            
+            walkRouteLine = L.polyline(lineCoords, {
+                color: '#ff4444',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 10'
+            }).addTo(map);
+
+            // Центрируем карту чтобы показать оба маркера
+            const bounds = L.latLngBounds(
+                [userLocation.lat, userLocation.lon],
+                [destinationLat, destinationLon]
+            );
+            map.fitBounds(bounds, { padding: [50, 50] });
+
+            walkBtn.classList.remove('loading');
+
+            showToast(`Цель: ${Math.round(actualDistance)}м от вас!`);
+            
+            // Плавное перемещение кнопок без размытия (только при первом нажатии)
+            if (!walkBtn.classList.contains('moved')) {
+                // Перемещаем кнопку "Гулять" вправо и уменьшаем
+                walkBtn.classList.add('moved');
+                
+                // Показываем кнопку "Я на месте"
+                document.getElementById('arrivedBtn').classList.add('show');
+            }
+        }
+
+        // Функция проверки прибытия на место
+        function checkArrival() {
+            if (!userLocation || !window.walkDestination) {
+                showToast('Сначала создайте маршрут');
+                return;
+            }
+
+            // Получаем текущее местоположение для проверки
+            if (!navigator.geolocation) {
+                showToast('Геолокация не поддерживается');
+                return;
+            }
+
+            const arrivedBtn = document.getElementById('arrivedBtn');
+            const originalText = arrivedBtn.textContent;
+            arrivedBtn.textContent = '⏳ Проверка...';
+            arrivedBtn.style.pointerEvents = 'none';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const currentLat = position.coords.latitude;
+                    const currentLon = position.coords.longitude;
+                    
+                    // Вычисляем расстояние до точки назначения
+                    const distance = calculateDistance(
+                        currentLat, currentLon,
+                        window.walkDestination.lat, window.walkDestination.lon
+                    );
+
+                    arrivedBtn.textContent = originalText;
+                    arrivedBtn.style.pointerEvents = 'auto';
+
+                    if (distance <= 25) {
+                        // Успех! Пользователь на месте
+                        showSuccessModal();
+                    } else {
+                        // Слишком далеко
+                        showErrorModal(Math.round(distance));
+                    }
+                },
+                (error) => {
+                    arrivedBtn.textContent = originalText;
+                    arrivedBtn.style.pointerEvents = 'auto';
+                    showToast('Не удалось определить местоположение');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // Показать модальное окно успеха
+        function showSuccessModal() {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const text = document.getElementById('modalText');
+            const btn = document.getElementById('modalBtn');
+            
+            title.textContent = '🎉 Поздравляем!';
+            title.className = '';
+            text.textContent = 'Вы добрались до конечной точки маршрута.';
+            text.className = '';
+            btn.textContent = '🚶 Гулять ещё';
+            btn.onclick = closeModalAndWalk;
+            
+            modal.classList.add('show');
+        }
+
+        // Показать модальное окно ошибки
+        function showErrorModal(distance) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const text = document.getElementById('modalText');
+            const btn = document.getElementById('modalBtn');
+            
+            title.textContent = '📍 Слишком далеко';
+            title.className = 'error-text';
+            text.textContent = `Вы слишком далеко от конечной точки маршрута. Подойдите ближе (осталось ${distance}м).`;
+            text.className = 'error-text';
+            btn.textContent = 'Понятно';
+            btn.onclick = closeModal;
+            
+            modal.classList.add('show');
+        }
+
+        // Закрыть модальное окно
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        // Закрыть модальное окно и начать новую прогулку
+        function closeModalAndWalk() {
+            closeModal();
+            // Скрываем кнопку "Я на месте"
+            document.getElementById('arrivedBtn').classList.remove('show');
+            // Возвращаем кнопку "Гулять" в центр
+            document.getElementById('walkBtn').classList.remove('moved');
+            // Запускаем новую прогулку
+            startWalk();
+        }
+
+        // Функция открытия маршрута в выбранных картах телефона
+        function openRoute(mapType) {
+            if (!userLocation || !window.walkDestination) {
+                showToast('Сначала создайте маршрут');
+                return;
+            }
+
+            const start = `${userLocation.lat},${userLocation.lon}`;
+            const end = `${window.walkDestination.lat},${window.walkDestination.lon}`;
+            
+            let url;
+            let mapName;
+
+            switch(mapType) {
+                case 'yandex':
+                    url = `https://yandex.ru/maps/?rtext=${start}~${end}&rtt=pd`;
+                    mapName = 'Яндекс.Картах';
+                    break;
+                case '2gis':
+                    url = `https://2gis.ru/routeSearch/rsType/pedestrian/from/${userLocation.lon},${userLocation.lat}/to/${window.walkDestination.lon},${window.walkDestination.lat}`;
+                    mapName = '2GIS';
+                    break;
+                case 'google':
+                default:
+                    url = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${end}&travelmode=walking`;
+                    mapName = 'Google Maps';
+                    break;
+            }
+            
+            // Открываем выбранную карту
+            window.open(url, '_blank');
+            
+            showToast(`Маршрут открыт в ${mapName}`);
+        }
+
+        // Функция вычисления расстояния между двумя точками (формула Гаверсина)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Радиус Земли в метрах
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Предотвращаем масштабирование двойным тапом
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

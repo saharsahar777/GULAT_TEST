@@ -183,13 +183,8 @@
             bottom: 30px;
             left: 20px;
             z-index: 1000;
-            background: #90EE90;
-            color: #2d5016;
+            background: none;
             border: none;
-            border-radius: 12px;
-            padding: 14px 20px;
-            font-size: 15px;
-            font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(144, 238, 144, 0.4);
             opacity: 0;
@@ -197,8 +192,14 @@
             pointer-events: none;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
             transition: all 0.5s ease;
+            padding: 0;
+        }
+
+        .arrived-btn img {
+            display: block;
+            height: auto;
         }
 
         .arrived-btn.show {
@@ -209,11 +210,14 @@
 
         .arrived-btn:active {
             transform: scale(0.95);
-            background: #7CD67C;
         }
 
         .arrived-btn.show:active {
             transform: translateY(0) scale(0.95);
+        }
+
+        .arrived-btn.loading {
+            opacity: 0.6;
         }
 
         /* Иконка галочки в кнопке */
@@ -363,6 +367,54 @@
             font-size: 14px;
         }
 
+        /* Popup предупреждение */
+        .popup-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            cursor: pointer;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .popup-warning.hidden {
+            animation: fadeOut 0.3s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .popup-warning img {
+            max-width: 90%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+
         /* Исправление отображения кастомного маркера */
         .custom-destination-icon {
             background: transparent !important;
@@ -399,9 +451,13 @@
 
     <!-- Кнопка "Я на месте" -->
     <button class="arrived-btn" id="arrivedBtn" onclick="checkArrival()">
-        <span class="check-icon">✓</span>
-        Я на месте
+        <img src="place button.png" alt="Я на месте">
     </button>
+
+    <!-- Popup предупреждение - показывается при загрузке -->
+    <div class="popup-warning" id="popupWarning" onclick="closePopup()">
+        <img src="Pop up warning.png" alt="Предупреждение">
+    </div>
 
     <div class="toast" id="toast"></div>
 
@@ -703,8 +759,7 @@
             }
 
             const arrivedBtn = document.getElementById('arrivedBtn');
-            const originalText = arrivedBtn.textContent;
-            arrivedBtn.textContent = '⏳ Проверка...';
+            arrivedBtn.classList.add('loading');
             arrivedBtn.style.pointerEvents = 'none';
 
             navigator.geolocation.getCurrentPosition(
@@ -718,7 +773,7 @@
                         window.walkDestination.lat, window.walkDestination.lon
                     );
 
-                    arrivedBtn.textContent = originalText;
+                    arrivedBtn.classList.remove('loading');
                     arrivedBtn.style.pointerEvents = 'auto';
 
                     if (distance <= 25) {
@@ -730,7 +785,7 @@
                     }
                 },
                 (error) => {
-                    arrivedBtn.textContent = originalText;
+                    arrivedBtn.classList.remove('loading');
                     arrivedBtn.style.pointerEvents = 'auto';
                     showToast('Не удалось определить местоположение');
                 },
@@ -848,6 +903,17 @@
             }
             lastTouchEnd = now;
         }, false);
+
+        // Функция закрытия popup
+        function closePopup() {
+            const popup = document.getElementById('popupWarning');
+            popup.classList.add('hidden');
+            
+            // Полностью скрываем после анимации
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 300);
+        }
     </script>
 </body>
 </html>
